@@ -6,7 +6,7 @@ import Container from './Container';
 export default function CtaSection({
   title = 'Have a project in mind?',
   description = 'Tell us what you are building, what is getting in the way, and where you want to go next. We will take it from there.',
-  primaryLabel = 'Start a conversation',
+  primaryLabel = 'Start Your Project',
   primaryTo = '/contact',
   secondaryLabel = 'Explore services',
   secondaryTo = '/services',
@@ -24,7 +24,7 @@ export default function CtaSection({
           <div className="relative max-w-2xl">
             <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent-300">
               <span className="h-px w-6 bg-accent-400" aria-hidden="true" />
-              Let&apos;s build something dependable
+              Start a project
             </p>
             <h2 className="mt-4 text-3xl font-bold tracking-tight text-white text-balance sm:text-4xl">
               {title}

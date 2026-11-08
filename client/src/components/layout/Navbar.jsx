@@ -26,11 +26,11 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur">
       <nav
         aria-label="Main navigation"
-        className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8"
+        className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8"
       >
         <Logo onClick={closeMenu} />
 
-        <div className="hidden items-center gap-1 lg:flex">
+        <div className="hidden items-center gap-0.5 xl:flex">
           {siteConfig.navLinks.map((link) => (
             <NavLink
               key={link.to}
@@ -38,7 +38,7 @@ export default function Navbar() {
               end={link.to === '/'}
               className={({ isActive }) =>
                 cn(
-                  'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  'whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
                   isActive
                     ? 'bg-navy-50 text-navy-950'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-navy-900',
@@ -50,9 +50,9 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="hidden lg:block">
-          <Button as={Link} to="/contact" size="sm">
-            Let&apos;s talk
+        <div className="hidden xl:block">
+          <Button as={Link} to={siteConfig.cta.to} size="sm">
+            {siteConfig.cta.label}
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
@@ -63,7 +63,7 @@ export default function Navbar() {
           aria-expanded={isOpen}
           aria-controls="mobile-navigation"
           aria-label={isOpen ? 'Close menu' : 'Open menu'}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 text-navy-900 transition-colors hover:bg-slate-50 lg:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 text-navy-900 transition-colors hover:bg-slate-50 xl:hidden"
         >
           {isOpen ? (
             <X className="h-5 w-5" aria-hidden="true" />
@@ -76,7 +76,7 @@ export default function Navbar() {
       {isOpen ? (
         <div
           id="mobile-navigation"
-          className="border-t border-slate-200 bg-white lg:hidden"
+          className="border-t border-slate-200 bg-white xl:hidden"
         >
           <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
             <ul className="space-y-1">
@@ -103,11 +103,11 @@ export default function Navbar() {
 
             <Button
               as={Link}
-              to="/contact"
+              to={siteConfig.cta.to}
               onClick={closeMenu}
               className="mt-4 w-full"
             >
-              Let&apos;s talk
+              {siteConfig.cta.label}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>

@@ -5,9 +5,14 @@ import Layout from './components/layout/Layout';
 const HomePage = lazy(() => import('./pages/Home/HomePage'));
 const AboutPage = lazy(() => import('./pages/About/AboutPage'));
 const ServicesPage = lazy(() => import('./pages/Services/ServicesPage'));
-const PortfolioPage = lazy(() => import('./pages/Portfolio/PortfolioPage'));
-const TeamPage = lazy(() => import('./pages/Team/TeamPage'));
-const CareersPage = lazy(() => import('./pages/Careers/CareersPage'));
+const ServiceDetailPage = lazy(
+  () => import('./pages/Services/ServiceDetailPage'),
+);
+const ProcessPage = lazy(() => import('./pages/Process/ProcessPage'));
+const RemoteWorkingPage = lazy(
+  () => import('./pages/RemoteWorking/RemoteWorkingPage'),
+);
+const FounderPage = lazy(() => import('./pages/Founder/FounderPage'));
 const ContactPage = lazy(() => import('./pages/Contact/ContactPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFound/NotFoundPage'));
 
@@ -18,9 +23,10 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="services" element={<ServicesPage />} />
-        <Route path="portfolio" element={<PortfolioPage />} />
-        <Route path="team" element={<TeamPage />} />
-        <Route path="careers" element={<CareersPage />} />
+        <Route path="services/:serviceId" element={<ServiceDetailPage />} />
+        <Route path="process" element={<ProcessPage />} />
+        <Route path="remote-working" element={<RemoteWorkingPage />} />
+        <Route path="founder" element={<FounderPage />} />
         <Route path="contact" element={<ContactPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

@@ -1,24 +1,37 @@
-import { useState } from 'react';
-import { submitContactMessage } from '../../services/contactService';
-import { validateContactForm } from '../../utils/validation';
+import { useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import {
+  getServiceTitleFromId,
+  INITIAL_INQUIRY_VALUES,
+} from '../../constants/inquiry';
+import { submitProjectInquiry } from '../../services/contactService';
+import { validateInquiry } from '../../utils/validation';
 
-const INITIAL_VALUES = {
-  name: '',
-  email: '',
-  subject: '',
-  message: '',
-};
+function emptyValues() {
+  return { ...INITIAL_INQUIRY_VALUES };
+}
 
 export function useContactForm() {
-  const [values, setValues] = useState(INITIAL_VALUES);
+  const [searchParams] = useSearchParams();
+  const requestedService = getServiceTitleFromId(searchParams.get('service'));
+
+  // Initialise directly from the query string so no state update is needed in
+  // an effect. ContactForm is keyed by the service parameter so it remounts
+  // when the link changes.
+  const [values, setValues] = useState(() => ({
+    ...emptyValues(),
+    service: requestedService || '',
+  }));
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState({ type: 'idle', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   function handleChange(event) {
-    const { name, value } = event.target;
+    const { name, type, value, checked } = event.target;
+    const nextValue = type === 'checkbox' ? checked : value;
 
-    setValues((current) => ({ ...current, [name]: value }));
+    setValues((current) => ({ ...current, [name]: nextValue }));
 
     setErrors((current) => {
       if (!current[name]) {
@@ -38,11 +51,11 @@ export function useContactForm() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (isSubmitting) {
+    if (submittingRef.current) {
       return;
     }
 
-    const validationErrors = validateContactForm(values);
+    const validationErrors = validateInquiry(values);
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -53,23 +66,38 @@ export function useContactForm() {
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     setErrors({});
     setStatus({ type: 'idle', message: '' });
 
-    try {
-      await submitContactMessage({
-        name: values.name.trim(),
-        email: values.email.trim(),
-        subject: values.subject.trim(),
-        message: values.message.trim(),
-      });
+    const payload = {
+      fullName: values.fullName.trim(),
+      email: values.email.trim(),
+      phone: values.phone.trim(),
+      company: values.company.trim(),
+      country: values.country.trim(),
+      service: values.service.trim(),
+      budget: values.budget.trim(),
+      timeline: values.timeline.trim(),
+      description: values.description.trim(),
+      contactMethod: values.contactMethod.trim(),
+      consent: values.consent === true,
+      website: values.website,
+    };
 
-      setValues(INITIAL_VALUES);
+    try {
+      const response = await submitProjectInquiry(payload);
+      const acknowledgementSent = Boolean(
+        response?.data?.acknowledgementSent,
+      );
+
+      setValues(emptyValues());
       setStatus({
         type: 'success',
-        message:
-          'Thank you — your message has been received. We will reply using the details you provided.',
+        message: acknowledgementSent
+          ? 'Thank you. Your project inquiry has been received, and a confirmation email is on its way to the address you provided. Our team will review your requirements and get back to you.'
+          : 'Thank you. Your project inquiry has been received. Our team will review your requirements and reply using the contact details you provided.',
       });
     } catch (error) {
       if (Array.isArray(error.details) && error.details.length > 0) {
@@ -86,9 +114,12 @@ export function useContactForm() {
 
       setStatus({
         type: 'error',
-        message: error.message || 'Something went wrong. Please try again.',
+        message:
+          error.message ||
+          'We could not send your inquiry. Please try again in a moment.',
       });
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   }

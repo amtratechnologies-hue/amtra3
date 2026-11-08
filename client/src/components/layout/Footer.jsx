@@ -1,37 +1,32 @@
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Mail, MapPin, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { services } from '../../constants/services';
 import { siteConfig } from '../../constants/siteConfig';
 import Container from '../common/Container';
 import Logo from '../common/Logo';
 
-const companyLinks = [
-  { label: 'About', to: '/about' },
-  { label: 'Team', to: '/team' },
-  { label: 'Careers', to: '/careers' },
-  { label: 'Contact', to: '/contact' },
-];
-
 export default function Footer() {
+  const { contact } = siteConfig;
+
   return (
     <footer className="bg-navy-950 text-slate-300">
       <Container className="py-16">
         <div className="grid gap-12 lg:grid-cols-12">
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-4">
             <Logo tone="light" />
             <p className="mt-5 max-w-sm text-sm leading-6 text-slate-400">
               {siteConfig.description}
             </p>
-            <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <p className="mt-6 text-xs font-semibold uppercase leading-5 tracking-[0.16em] text-slate-400">
               {siteConfig.tagline}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-7">
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-8">
             <div>
               <h2 className="text-sm font-semibold text-white">Company</h2>
               <ul className="mt-4 space-y-3 text-sm">
-                {companyLinks.map((link) => (
+                {siteConfig.navLinks.map((link) => (
                   <li key={link.to}>
                     <Link
                       to={link.to}
@@ -47,30 +42,70 @@ export default function Footer() {
             <div>
               <h2 className="text-sm font-semibold text-white">Services</h2>
               <ul className="mt-4 space-y-3 text-sm">
-                {services.slice(0, 5).map((service) => (
+                {services.slice(0, 6).map((service) => (
                   <li key={service.id}>
                     <Link
-                      to={`/services#${service.id}`}
+                      to={`/services/${service.id}`}
                       className="text-slate-400 transition-colors hover:text-accent-300"
                     >
                       {service.title}
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <Link
+                    to="/services"
+                    className="inline-flex items-center gap-1 font-semibold text-accent-300 transition-colors hover:text-accent-200"
+                  >
+                    View all services
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </li>
               </ul>
             </div>
 
-            <div>
+            <div className="col-span-2 sm:col-span-1">
               <h2 className="text-sm font-semibold text-white">Get in touch</h2>
-              <p className="mt-4 text-sm leading-6 text-slate-400">
-                Tell us about your project and we will reply using the details you
-                share.
-              </p>
+              <ul className="mt-4 space-y-3 text-sm text-slate-400">
+                <li>
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className="inline-flex items-start gap-2 transition-colors hover:text-accent-300"
+                  >
+                    <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="break-all">{contact.email}</span>
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={contact.whatsapp}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-start gap-2 transition-colors hover:text-accent-300"
+                  >
+                    <MessageCircle
+                      className="mt-0.5 h-4 w-4 shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span>
+                      WhatsApp
+                      <span className="mt-0.5 block text-xs text-slate-400">
+                        {contact.whatsappInternational}
+                      </span>
+                    </span>
+                  </a>
+                </li>
+                <li className="inline-flex items-start gap-2">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>{contact.location}</span>
+                </li>
+              </ul>
+
               <Link
-                to="/contact"
-                className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-300 transition-colors hover:text-accent-200"
+                to="/contact#inquiry"
+                className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-300 transition-colors hover:text-accent-200"
               >
-                Contact us
+                Request a Service
                 <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </div>
@@ -78,10 +113,8 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            © {new Date().getFullYear()} {siteConfig.name}. All rights reserved.
-          </p>
-          <p>Built with the MERN stack.</p>
+          <p>© 2026 AMTRA Technologies. All Rights Reserved.</p>
+          <p>{siteConfig.brandMessage}</p>
         </div>
       </Container>
     </footer>

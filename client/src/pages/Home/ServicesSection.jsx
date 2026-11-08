@@ -13,8 +13,8 @@ export default function ServicesSection() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <SectionHeading
             eyebrow="What we do"
-            title="Services built around the full product lifecycle."
-            description="From first discovery to long-term support, we bring the right mix of product thinking and hands-on engineering."
+            title="Services built around your business goals."
+            description="From a new website to a custom platform or an AI feature, we bring the right mix of product thinking and hands-on engineering."
           />
 
           <Button

@@ -9,12 +9,12 @@ function LogoMark({ className }) {
       aria-hidden="true"
       focusable="false"
     >
-      <rect width="64" height="64" rx="16" fill="#0b1f38" />
+      <rect width="64" height="64" rx="16" fill="#101827" />
       <path
         d="M14 47 27.4 17h9.2L50 47h-9.1l-2.4-6.2H25.5L23.1 47H14Zm14.4-13.6h7.2L32 24.5l-3.6 8.9Z"
-        fill="#22d3ee"
+        fill="#3985D6"
       />
-      <circle cx="50" cy="15" r="3" fill="#67e8f9" />
+      <circle cx="50" cy="15" r="3" fill="#7957D5" />
     </svg>
   );
 }

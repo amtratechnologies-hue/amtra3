@@ -10,13 +10,17 @@ export default function WhyChooseUsSection() {
         className="absolute -right-24 top-1/3 h-72 w-72 rounded-full bg-accent-500/10 blur-3xl"
         aria-hidden="true"
       />
+      <div
+        className="absolute -bottom-32 left-1/4 h-72 w-72 rounded-full bg-secondary-500/10 blur-3xl"
+        aria-hidden="true"
+      />
 
       <Container className="relative grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
         <SectionHeading
           tone="dark"
           eyebrow="Why AMTRA"
-          title="A partner that stays accountable to the outcome."
-          description="Good software is more than a working demo. We care about how it is built, how it is maintained, and how confidently your team can own it."
+          title="Technology Built Around Your Goals."
+          description="Good software is more than a working demo. We care about how it is planned, how it is built, and how confidently your team can own it."
         />
 
         <div className="grid gap-6 sm:grid-cols-2">

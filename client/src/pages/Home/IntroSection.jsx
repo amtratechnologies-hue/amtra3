@@ -1,29 +1,38 @@
-import { ArrowRight, BrainCircuit, CloudCog, Globe, ShieldCheck } from 'lucide-react';
+import {
+  ArrowRight,
+  BrainCircuit,
+  CloudCog,
+  Globe,
+  ShieldCheck,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Container from '../../components/common/Container';
 import SectionHeading from '../../components/common/SectionHeading';
 import Button from '../../components/ui/Button';
-import { companyIntro } from '../../constants/company';
 
 const focusAreas = [
   {
-    title: 'Web, mobile, and desktop products',
-    description: 'Interfaces and platforms that feel fast, clear, and dependable.',
+    title: 'Custom software and digital products',
+    description:
+      'Web, mobile, desktop, and custom business systems built around real workflows.',
     icon: Globe,
   },
   {
     title: 'AI and workflow automation',
-    description: 'Practical intelligence embedded where it adds real value.',
+    description:
+      'Intelligent features and automation applied where they create genuine value.',
     icon: BrainCircuit,
   },
   {
     title: 'Cloud infrastructure and DevOps',
-    description: 'Delivery pipelines and environments that scale with you.',
+    description:
+      'Deployment and delivery practices that keep applications reliable as they grow.',
     icon: CloudCog,
   },
   {
     title: 'Security and technical consulting',
-    description: 'Independent guidance for safer, clearer technical decisions.',
+    description:
+      'Clear guidance and safer engineering practices for important technical decisions.',
     icon: ShieldCheck,
   },
 ];
@@ -34,12 +43,16 @@ export default function IntroSection() {
       <Container className="grid gap-12 lg:grid-cols-2 lg:items-start lg:gap-20">
         <div>
           <SectionHeading
-            eyebrow="Who we are"
-            title="A software partner focused on outcomes, not just output."
-            description={companyIntro[0]}
+            eyebrow="Your technology partner"
+            title="Your Technology Partner for Digital Growth"
+            description="At AMTRA Technologies, we combine technical expertise, creativity, and modern development practices to deliver solutions that help businesses operate smarter and grow faster."
           />
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-            {companyIntro[1]}
+
+          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">
+            We are an emerging software development company focused on turning
+            ideas into practical, reliable, and scalable digital products. Every
+            engagement starts with understanding the problem before choosing the
+            technology.
           </p>
 
           <Button as={Link} to="/about" variant="secondary" className="mt-8">
@@ -63,7 +76,9 @@ export default function IntroSection() {
                     <Icon className="h-5 w-5" aria-hidden="true" />
                   </span>
                   <div>
-                    <p className="text-sm font-semibold text-navy-950">{area.title}</p>
+                    <p className="text-sm font-semibold text-navy-950">
+                      {area.title}
+                    </p>
                     <p className="mt-1 text-sm leading-6 text-slate-600">
                       {area.description}
                     </p>

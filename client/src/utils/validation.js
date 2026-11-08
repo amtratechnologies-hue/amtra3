@@ -1,53 +1,93 @@
-export const CONTACT_LIMITS = Object.freeze({
-  name: { min: 2, max: 80 },
-  email: { max: 254 },
-  subject: { min: 3, max: 120 },
-  message: { min: 20, max: 2000 },
-});
+import {
+  BUDGET_OPTIONS,
+  CONTACT_METHOD_OPTIONS,
+  INQUIRY_LIMITS,
+  SERVICE_OPTIONS,
+  TIMELINE_OPTIONS,
+} from '../constants/inquiry';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const PHONE_PATTERN = /^\+?[\d\s().-]{6,30}$/;
 
 /**
- * Validate the contact form and return a map of field -> message.
+ * Validate the project inquiry form and return a map of field -> message.
  * An empty object means the form is valid.
  */
-export function validateContactForm(values) {
+export function validateInquiry(values) {
   const errors = {};
-  const name = values.name.trim();
-  const email = values.email.trim();
-  const subject = values.subject.trim();
-  const message = values.message.trim();
+  const fullName = String(values.fullName ?? '').trim();
+  const email = String(values.email ?? '').trim();
+  const phone = String(values.phone ?? '').trim();
+  const company = String(values.company ?? '').trim();
+  const country = String(values.country ?? '').trim();
+  const service = String(values.service ?? '').trim();
+  const budget = String(values.budget ?? '').trim();
+  const timeline = String(values.timeline ?? '').trim();
+  const description = String(values.description ?? '').trim();
+  const contactMethod = String(values.contactMethod ?? '').trim();
 
-  if (!name) {
-    errors.name = 'Please enter your name.';
-  } else if (name.length < CONTACT_LIMITS.name.min) {
-    errors.name = `Name must be at least ${CONTACT_LIMITS.name.min} characters.`;
-  } else if (name.length > CONTACT_LIMITS.name.max) {
-    errors.name = `Name must be ${CONTACT_LIMITS.name.max} characters or fewer.`;
+  if (!fullName) {
+    errors.fullName = 'Please enter your full name.';
+  } else if (fullName.length < INQUIRY_LIMITS.fullName.min) {
+    errors.fullName = `Full name must be at least ${INQUIRY_LIMITS.fullName.min} characters.`;
+  } else if (fullName.length > INQUIRY_LIMITS.fullName.max) {
+    errors.fullName = `Full name must be ${INQUIRY_LIMITS.fullName.max} characters or fewer.`;
   }
 
   if (!email) {
-    errors.email = 'Please enter your email address.';
-  } else if (email.length > CONTACT_LIMITS.email.max) {
+    errors.email = 'Please enter your business email address.';
+  } else if (email.length > INQUIRY_LIMITS.email.max) {
     errors.email = 'Please use a shorter email address.';
   } else if (!EMAIL_PATTERN.test(email)) {
     errors.email = 'Please enter a valid email address.';
   }
 
-  if (!subject) {
-    errors.subject = 'Please add a subject.';
-  } else if (subject.length < CONTACT_LIMITS.subject.min) {
-    errors.subject = `Subject must be at least ${CONTACT_LIMITS.subject.min} characters.`;
-  } else if (subject.length > CONTACT_LIMITS.subject.max) {
-    errors.subject = `Subject must be ${CONTACT_LIMITS.subject.max} characters or fewer.`;
+  if (phone) {
+    if (phone.length > INQUIRY_LIMITS.phone.max) {
+      errors.phone = `Phone number must be ${INQUIRY_LIMITS.phone.max} characters or fewer.`;
+    } else if (!PHONE_PATTERN.test(phone)) {
+      errors.phone =
+        'Please enter a valid phone number, including the country code.';
+    }
   }
 
-  if (!message) {
-    errors.message = 'Please tell us a little about your project.';
-  } else if (message.length < CONTACT_LIMITS.message.min) {
-    errors.message = `Please provide a little more detail (at least ${CONTACT_LIMITS.message.min} characters).`;
-  } else if (message.length > CONTACT_LIMITS.message.max) {
-    errors.message = `Message must be ${CONTACT_LIMITS.message.max} characters or fewer.`;
+  if (company.length > INQUIRY_LIMITS.company.max) {
+    errors.company = `Company name must be ${INQUIRY_LIMITS.company.max} characters or fewer.`;
+  }
+
+  if (country.length > INQUIRY_LIMITS.country.max) {
+    errors.country = `Country must be ${INQUIRY_LIMITS.country.max} characters or fewer.`;
+  }
+
+  if (!service) {
+    errors.service = 'Please select the service you need.';
+  } else if (!SERVICE_OPTIONS.includes(service)) {
+    errors.service = 'Please select a valid service.';
+  }
+
+  if (budget && !BUDGET_OPTIONS.includes(budget)) {
+    errors.budget = 'Please select a valid budget range.';
+  }
+
+  if (timeline && !TIMELINE_OPTIONS.includes(timeline)) {
+    errors.timeline = 'Please select a valid timeline.';
+  }
+
+  if (!description) {
+    errors.description = 'Please describe your project.';
+  } else if (description.length < INQUIRY_LIMITS.description.min) {
+    errors.description = `Please provide at least ${INQUIRY_LIMITS.description.min} characters so we can understand your requirements.`;
+  } else if (description.length > INQUIRY_LIMITS.description.max) {
+    errors.description = `Project description must be ${INQUIRY_LIMITS.description.max.toLocaleString('en-US')} characters or fewer.`;
+  }
+
+  if (contactMethod && !CONTACT_METHOD_OPTIONS.includes(contactMethod)) {
+    errors.contactMethod = 'Please select a valid contact method.';
+  }
+
+  if (values.consent !== true) {
+    errors.consent =
+      'Please confirm that AMTRA Technologies may contact you about your inquiry.';
   }
 
   return errors;
