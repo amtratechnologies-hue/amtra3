@@ -4,20 +4,41 @@ import { successResponse } from '../utils/apiResponse.js';
 export function createContactController(contactService) {
   return {
     async submit(req, res) {
-      const { name, email, subject, message } = req.body;
+      const {
+        fullName,
+        email,
+        phone,
+        company,
+        country,
+        service,
+        budget,
+        timeline,
+        description,
+        contactMethod,
+      } = req.body;
 
       const result = await contactService.submit({
-        name,
+        fullName,
         email,
-        subject,
-        message,
+        phone: phone || '',
+        company: company || '',
+        country: country || '',
+        service,
+        budget: budget || '',
+        timeline: timeline || '',
+        description,
+        contactMethod: contactMethod || '',
       });
 
       res.status(HTTP_STATUS.CREATED).json(
-        successResponse('Thank you — your message has been received.', {
-          id: result.id,
-          receivedAt: result.createdAt,
-        }),
+        successResponse(
+          'Thank you. Your project inquiry has been received and our team will review it shortly.',
+          {
+            id: result.id,
+            receivedAt: result.receivedAt,
+            acknowledgementSent: result.acknowledgementSent,
+          },
+        ),
       );
     },
   };

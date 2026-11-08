@@ -22,8 +22,8 @@ export function createApp({
 
   app.use(helmet());
   app.use(corsMiddleware);
-  app.use(express.json({ limit: '10kb' }));
-  app.use(express.urlencoded({ extended: false, limit: '10kb' }));
+  app.use(express.json({ limit: '32kb' }));
+  app.use(express.urlencoded({ extended: false, limit: '32kb' }));
 
   if (enableRateLimit) {
     app.use('/api', apiLimiter);

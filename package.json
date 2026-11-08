@@ -2,7 +2,7 @@
   "name": "amtra-technologies",
   "version": "1.0.0",
   "private": true,
-  "description": "Official website for AMTRA Technologies — MERN stack monorepo.",
+  "description": "Official website for AMTRA Technologies — React and Express monorepo.",
   "workspaces": [
     "client",
     "server"

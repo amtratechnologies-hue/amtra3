@@ -17,20 +17,6 @@ function normalizeError(error) {
     };
   }
 
-  if (error.name === 'ValidationError') {
-    return {
-      status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
-      message: 'The submitted data is invalid.',
-    };
-  }
-
-  if (error.code === 11000) {
-    return {
-      status: HTTP_STATUS.CONFLICT,
-      message: 'A record with these details already exists.',
-    };
-  }
-
   if (error.isOperational) {
     return {
       status: error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR,
