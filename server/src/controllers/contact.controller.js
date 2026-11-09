@@ -36,7 +36,6 @@ export function createContactController(contactService) {
           {
             id: result.id,
             receivedAt: result.receivedAt,
-            acknowledgementSent: result.acknowledgementSent,
           },
         ),
       );

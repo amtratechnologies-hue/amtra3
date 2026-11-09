@@ -15,7 +15,8 @@
     "preview": "npm run preview --workspace client",
     "start": "npm run start --workspace server",
     "lint": "npm run lint --workspace client && npm run lint --workspace server",
-    "test": "npm run test --workspace server"
+    "test": "npm run test --workspace server",
+    "seed:admin": "npm run seed:admin --workspace server"
   },
   "engines": {
     "node": ">=20.19.0"

@@ -23,24 +23,66 @@ const config = {
   smtpPass: 'test-app-password',
   publicEmail: 'amtratechnologies@gmail.com',
   receiverEmail: 'private-inbox@example.com',
-  sendAcknowledgement: true,
 };
 
-function createCollectingMailer() {
+function createMemoryRepository() {
+  const items = [];
+
+  return {
+    items,
+    async create(data) {
+      const document = {
+        _id: `req_${items.length + 1}`,
+        ...data,
+        createdAt: new Date('2026-01-01T10:00:00.000Z'),
+        notificationStatus: 'pending',
+      };
+
+      items.push(document);
+      return document;
+    },
+    async markNotificationStatus(id, status) {
+      const item = items.find((entry) => entry._id === id);
+
+      if (item) {
+        item.notificationStatus = status;
+      }
+    },
+  };
+}
+
+function createCollectingMailer({ fail = false } = {}) {
   const messages = [];
 
   return {
     messages,
     async send(message) {
       messages.push(message);
+
+      if (fail) {
+        throw new Error('SMTP rejected: secret-provider-detail');
+      }
+
       return { id: `email_${messages.length}` };
     },
   };
 }
 
-test('sends the internal inquiry email with the correct recipient and Reply-To', async () => {
-  const mailer = createCollectingMailer();
+test('saves the request before sending the administrator notification', async () => {
+  const repository = createMemoryRepository();
+  let savedBeforeSend = false;
+
+  const mailer = {
+    messages: [],
+    async send(message) {
+      savedBeforeSend = repository.items.length === 1;
+      this.messages.push(message);
+      return { id: 'email_1' };
+    },
+  };
+
   const service = createContactService({
+    repository,
     mailer,
     config,
     now: () => new Date('2026-01-01T10:00:00.000Z'),
@@ -48,149 +90,137 @@ test('sends the internal inquiry email with the correct recipient and Reply-To',
 
   const result = await service.submit(inquiry);
 
-  assert.equal(mailer.messages.length, 2);
-
-  const internal = mailer.messages[0];
-  assert.equal(internal.to, 'private-inbox@example.com');
-  assert.equal(internal.replyTo, 'ada@example.com');
-  assert.equal(
-    internal.subject,
-    'New Project Inquiry \u2013 Web Development \u2013 Ada Lovelace',
-  );
-  assert.match(internal.text, /NEW CLIENT PROJECT INQUIRY/);
-  assert.match(internal.text, /Service Required: Web Development/);
-  assert.match(internal.text, /Project Budget: \$1,000 \u2013 \$3,000/);
-
-  assert.equal(result.id, 'email_1');
+  assert.equal(savedBeforeSend, true);
+  assert.equal(repository.items.length, 1);
+  assert.equal(result.id, 'req_1');
   assert.equal(result.receivedAt, '2026-01-01T10:00:00.000Z');
-  assert.equal(result.acknowledgementSent, true);
+  assert.equal(result.notificationSent, true);
+  assert.equal(repository.items[0].notificationStatus, 'sent');
 });
 
-test('escapes user values in the HTML email body', async () => {
+test('sends one notification to the administrator with the required subject', async () => {
+  const repository = createMemoryRepository();
   const mailer = createCollectingMailer();
-  const service = createContactService({ mailer, config });
+  const service = createContactService({ repository, mailer, config });
 
   await service.submit(inquiry);
 
-  const internal = mailer.messages[0];
+  assert.equal(mailer.messages.length, 1, 'no client acknowledgement is sent');
 
-  assert.equal(internal.html.includes('<script>alert(1)</script>'), false);
-  assert.match(internal.html, /Acme &amp; Sons &lt;script&gt;alert\(1\)&lt;\/script&gt;/);
-  assert.match(internal.html, /white-space:pre-wrap/);
+  const notification = mailer.messages[0];
+
+  assert.equal(notification.to, 'private-inbox@example.com');
+  assert.equal(notification.replyTo, 'ada@example.com');
+  assert.equal(
+    notification.subject,
+    'New Service Request Received \u2014 AMTRA Technologies',
+  );
+  assert.match(notification.text, /A new client service request has been submitted/);
+  assert.match(notification.text, /Client name: Ada Lovelace/);
+  assert.match(notification.text, /Requested service: Web Development/);
+  assert.match(notification.text, /Submitted:/);
+  assert.match(notification.text, /available in the secure admin panel/);
+});
+
+test('does not send the full request body to the client', async () => {
+  const repository = createMemoryRepository();
+  const mailer = createCollectingMailer();
+  const service = createContactService({ repository, mailer, config });
+
+  await service.submit(inquiry);
+
+  assert.equal(mailer.messages.length, 1);
+  assert.equal(mailer.messages[0].to, 'private-inbox@example.com');
+  assert.equal(mailer.messages[0].text.includes(inquiry.description), false);
+  assert.equal(mailer.messages[0].text.includes(inquiry.budget), false);
+});
+
+test('escapes user values in the HTML notification', async () => {
+  const repository = createMemoryRepository();
+  const mailer = createCollectingMailer();
+  const service = createContactService({ repository, mailer, config });
+
+  await service.submit({
+    ...inquiry,
+    fullName: 'Acme & Sons <script>alert(1)</script>',
+  });
+
+  const notification = mailer.messages[0];
+
+  assert.equal(notification.html.includes('<script>alert(1)</script>'), false);
+  assert.match(notification.html, /Acme &amp; Sons/);
+  assert.match(notification.html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
 });
 
 test('removes line breaks from values used in the email subject', async () => {
+  const repository = createMemoryRepository();
   const mailer = createCollectingMailer();
-  const service = createContactService({ mailer, config });
+  const service = createContactService({ repository, mailer, config });
 
   await service.submit({
     ...inquiry,
     fullName: 'Eve\r\nBcc: attacker@example.com',
   });
 
-  const internal = mailer.messages[0];
+  const notification = mailer.messages[0];
 
-  assert.equal(internal.subject.includes('\r'), false);
-  assert.equal(internal.subject.includes('\n'), false);
-  assert.match(
-    internal.subject,
-    /New Project Inquiry \u2013 Web Development \u2013 Eve Bcc: attacker@example.com/,
-  );
-});
-
-test('sends a client acknowledgement after the internal email succeeds', async () => {
-  const mailer = createCollectingMailer();
-  const service = createContactService({ mailer, config });
-
-  await service.submit(inquiry);
-
-  const acknowledgement = mailer.messages[1];
-
-  assert.equal(acknowledgement.to, 'ada@example.com');
+  assert.equal(notification.subject.includes('\r'), false);
+  assert.equal(notification.subject.includes('\n'), false);
   assert.equal(
-    acknowledgement.subject,
-    'Thank You for Contacting AMTRA Technologies',
+    notification.subject,
+    'New Service Request Received \u2014 AMTRA Technologies',
   );
-  assert.equal(acknowledgement.replyTo, 'amtratechnologies@gmail.com');
-  assert.match(acknowledgement.text, /Dear Ada Lovelace/);
-  assert.match(acknowledgement.text, /regarding Web Development/);
-  assert.equal(acknowledgement.html.includes('private-inbox@example.com'), false);
-  assert.equal(acknowledgement.text.includes('private-inbox@example.com'), false);
 });
 
-test('skips the acknowledgement when it is disabled', async () => {
-  const mailer = createCollectingMailer();
-  const service = createContactService({
-    mailer,
-    config: { ...config, sendAcknowledgement: false },
-  });
+test('keeps the saved request when SMTP delivery fails', async () => {
+  const repository = createMemoryRepository();
+  const mailer = createCollectingMailer({ fail: true });
+  const service = createContactService({ repository, mailer, config });
 
   const result = await service.submit(inquiry);
 
-  assert.equal(mailer.messages.length, 1);
-  assert.equal(result.acknowledgementSent, false);
+  assert.equal(repository.items.length, 1);
+  assert.equal(result.notificationSent, false);
+  assert.equal(result.id, 'req_1');
+  assert.equal(repository.items[0].notificationStatus, 'failed');
 });
 
-test('a failed acknowledgement does not fail a delivered inquiry', async () => {
-  const messages = [];
-  const mailer = {
-    async send(message) {
-      messages.push(message);
-
-      if (messages.length === 2) {
-        throw new Error('acknowledgement rejected');
-      }
-
-      return { id: 'email_1' };
-    },
-  };
-
-  const service = createContactService({ mailer, config });
-  const result = await service.submit(inquiry);
-
-  assert.equal(messages.length, 2);
-  assert.equal(result.acknowledgementSent, false);
-  assert.equal(result.id, 'email_1');
-});
-
-test('returns a 503 configuration error when email is not configured', async () => {
+test('saves the request even when SMTP is not configured', async () => {
+  const repository = createMemoryRepository();
   const mailer = createCollectingMailer();
   const service = createContactService({
+    repository,
     mailer,
     config: { ...config, smtpUser: '', smtpPass: '' },
   });
 
-  await assert.rejects(
-    () => service.submit(inquiry),
-    (error) => {
-      assert.equal(error.statusCode, 503);
-      assert.match(error.message, /not available right now/i);
-      assert.match(error.message, /amtratechnologies@gmail\.com/);
-      return true;
-    },
-  );
+  const result = await service.submit(inquiry);
 
+  assert.equal(repository.items.length, 1);
   assert.equal(mailer.messages.length, 0);
+  assert.equal(result.notificationSent, false);
+  assert.equal(repository.items[0].notificationStatus, 'failed');
 });
 
-test('returns a safe 502 error when the provider rejects the email', async () => {
-  const mailer = {
-    async send() {
-      throw new Error('SMTP rejected the message: secret-provider-detail');
+test('does not leak database errors to the client', async () => {
+  const repository = {
+    async create() {
+      throw new Error('MongoServerError: secret-database-detail');
     },
+    async markNotificationStatus() {},
   };
 
-  const service = createContactService({ mailer, config });
+  const service = createContactService({
+    repository,
+    mailer: createCollectingMailer(),
+    config,
+  });
 
   await assert.rejects(
     () => service.submit(inquiry),
     (error) => {
-      assert.equal(error.statusCode, 502);
-      assert.equal(
-        error.message,
-        'We could not send your project inquiry right now. Please try again in a moment or email us directly at amtratechnologies@gmail.com.',
-      );
-      assert.equal(error.message.includes('secret-provider-detail'), false);
+      assert.equal(error.statusCode, 500);
+      assert.equal(error.message.includes('secret-database-detail'), false);
       return true;
     },
   );

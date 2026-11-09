@@ -1,16 +1,13 @@
 import { env } from '../config/env.js';
 import { HTTP_STATUS } from '../constants/httpStatus.js';
+import { serviceRequestRepository as defaultRepository } from '../repositories/serviceRequest.repository.js';
 import ApiError from '../utils/ApiError.js';
 import logger from '../utils/logger.js';
 import { createSmtpMailer } from './email/smtp.provider.js';
-import { buildConfirmationEmail } from './email/templates/confirmationEmail.js';
-import { buildInquiryEmail } from './email/templates/inquiryEmail.js';
+import { buildAdminNotificationEmail } from './email/templates/adminNotificationEmail.js';
 
-const DIRECT_CONTACT_MESSAGE =
-  'Online project inquiries are not available right now. Please email us directly at amtratechnologies@gmail.com.';
-
-const DELIVERY_FAILURE_MESSAGE =
-  'We could not send your project inquiry right now. Please try again in a moment or email us directly at amtratechnologies@gmail.com.';
+const SAVE_FAILURE_MESSAGE =
+  'We could not save your project inquiry right now. Please try again in a moment or email us directly at amtratechnologies@gmail.com.';
 
 function resolveConfiguration(overrides = {}) {
   return {
@@ -19,7 +16,12 @@ function resolveConfiguration(overrides = {}) {
   };
 }
 
+/**
+ * Persist a service request first, then send a best-effort notification to the
+ * administrator. Email failures never remove or hide a saved request.
+ */
 export function createContactService({
+  repository = defaultRepository,
   mailer,
   config: configOverrides,
   now = () => new Date(),
@@ -37,72 +39,104 @@ export function createContactService({
       pass: config.smtpPass,
     });
 
-  const hasRequiredConfiguration = Boolean(
+  const canNotify = Boolean(
     config.receiverEmail && config.smtpUser && config.smtpPass,
   );
 
   return {
     async submit(inquiry) {
-      if (!hasRequiredConfiguration) {
+      const payload = {
+        fullName: inquiry.fullName,
+        email: inquiry.email,
+        phone: inquiry.phone || '',
+        company: inquiry.company || '',
+        country: inquiry.country || '',
+        service: inquiry.service,
+        budget: inquiry.budget || '',
+        timeline: inquiry.timeline || '',
+        description: inquiry.description,
+        contactMethod: inquiry.contactMethod || '',
+      };
+
+      let saved;
+
+      try {
+        saved = await repository.create(payload);
+      } catch (error) {
+        if (error?.isOperational) {
+          throw error;
+        }
+
+        log.error('Service request could not be saved.', {
+          reason: error?.message || 'Unknown database error',
+        });
+
         throw new ApiError(
-          HTTP_STATUS.SERVICE_UNAVAILABLE,
-          DIRECT_CONTACT_MESSAGE,
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          SAVE_FAILURE_MESSAGE,
         );
       }
 
-      const submittedAt = now();
+      const submittedAt = saved?.createdAt ? new Date(saved.createdAt) : now();
+      const requestId = String(saved?._id ?? '');
 
-      const internalEmail = buildInquiryEmail({
-        inquiry: {
-          ...inquiry,
-          receiverEmail: config.receiverEmail,
-        },
-        submittedAt,
-      });
+      if (!canNotify) {
+        log.warn(
+          'SMTP is not configured. The service request was saved without an email notification.',
+          { requestId },
+        );
 
-      let delivery;
+        try {
+          await repository.markNotificationStatus(requestId, 'failed');
+        } catch {
+          // The request is already saved; notification bookkeeping is optional.
+        }
+
+        return {
+          id: requestId,
+          receivedAt: submittedAt.toISOString(),
+          notificationSent: false,
+        };
+      }
+
+      let notificationSent = false;
 
       try {
-        delivery = await resolvedMailer.send({
-          ...internalEmail,
-          replyTo: inquiry.email,
+        const notification = buildAdminNotificationEmail({
+          request: saved,
+          submittedAt,
+          receiverEmail: config.receiverEmail,
         });
+
+        await resolvedMailer.send({
+          ...notification,
+          replyTo: saved?.email || inquiry.email,
+        });
+
+        notificationSent = true;
+
+        try {
+          await repository.markNotificationStatus(requestId, 'sent');
+        } catch {
+          // Bookkeeping only.
+        }
       } catch (error) {
-        log.error('Inquiry email delivery failed.', {
+        log.error('Service request notification email failed.', {
+          requestId,
           reason: error?.message || 'Unknown email error',
         });
 
-        throw new ApiError(HTTP_STATUS.BAD_GATEWAY, DELIVERY_FAILURE_MESSAGE);
-      }
-
-      let acknowledgementSent = false;
-
-      if (config.sendAcknowledgement && inquiry.email) {
         try {
-          const acknowledgement = buildConfirmationEmail({
-            inquiry,
-            publicEmail: config.publicEmail,
-          });
-
-          await resolvedMailer.send({
-            ...acknowledgement,
-            replyTo: config.publicEmail,
-          });
-
-          acknowledgementSent = true;
-        } catch (error) {
-          // The inquiry itself was accepted, so the visitor should still see a
-          // success state. The acknowledgement is a best-effort follow-up.
-          log.error('Client acknowledgement email failed.', {
-            reason: error?.message || 'Unknown email error',
-          });
+          await repository.markNotificationStatus(requestId, 'failed');
+        } catch {
+          // Bookkeeping only.
         }
       }
 
       return {
-        id: delivery?.id || null,
+        id: requestId,
         receivedAt: submittedAt.toISOString(),
-        acknowledgementSent,
+        notificationSent,
       };
     },
   };

@@ -87,17 +87,13 @@ export function useContactForm() {
     };
 
     try {
-      const response = await submitProjectInquiry(payload);
-      const acknowledgementSent = Boolean(
-        response?.data?.acknowledgementSent,
-      );
+      await submitProjectInquiry(payload);
 
       setValues(emptyValues());
       setStatus({
         type: 'success',
-        message: acknowledgementSent
-          ? 'Thank you. Your project inquiry has been received, and a confirmation email is on its way to the address you provided. Our team will review your requirements and get back to you.'
-          : 'Thank you. Your project inquiry has been received. Our team will review your requirements and reply using the contact details you provided.',
+        message:
+          'Thank you. Your project inquiry has been received. Our team will review your requirements and reply using the contact details you provided.',
       });
     } catch (error) {
       if (Array.isArray(error.details) && error.details.length > 0) {

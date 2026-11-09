@@ -23,6 +23,13 @@ function buildService(submit) {
   return { submit };
 }
 
+function buildResult(id = 'request_123') {
+  return {
+    id,
+    receivedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
 test('POST /api/v1/contact accepts a valid inquiry and returns 201', async () => {
   let receivedPayload;
   let submitCalls = 0;
@@ -30,11 +37,7 @@ test('POST /api/v1/contact accepts a valid inquiry and returns 201', async () =>
   const contactService = buildService(async (payload) => {
     submitCalls += 1;
     receivedPayload = payload;
-    return {
-      id: 'email_123',
-      receivedAt: '2026-01-01T00:00:00.000Z',
-      acknowledgementSent: true,
-    };
+    return buildResult();
   });
 
   const app = createApp({ contactService, enableRateLimit: false });
@@ -45,10 +48,10 @@ test('POST /api/v1/contact accepts a valid inquiry and returns 201', async () =>
     .expect(201);
 
   assert.equal(response.body.success, true);
-  assert.equal(response.body.data.id, 'email_123');
+  assert.equal(response.body.data.id, 'request_123');
   assert.equal(response.body.data.receivedAt, '2026-01-01T00:00:00.000Z');
-  assert.equal(response.body.data.acknowledgementSent, true);
-  assert.equal(submitCalls, 1, 'one request must trigger exactly one send');
+  assert.equal('acknowledgementSent' in response.body.data, false);
+  assert.equal(submitCalls, 1, 'one request must trigger exactly one submission');
 
   assert.deepEqual(receivedPayload, {
     fullName: 'Ada Lovelace',
@@ -70,11 +73,7 @@ test('POST /api/v1/contact accepts an inquiry without optional fields', async ()
 
   const contactService = buildService(async (payload) => {
     receivedPayload = payload;
-    return {
-      id: 'email_456',
-      receivedAt: '2026-01-01T00:00:00.000Z',
-      acknowledgementSent: true,
-    };
+    return buildResult('request_456');
   });
 
   const app = createApp({ contactService, enableRateLimit: false });
@@ -104,11 +103,7 @@ test('POST /api/v1/contact returns 422 with field errors for invalid input', asy
 
   const contactService = buildService(async () => {
     serviceCalled = true;
-    return {
-      id: 'unused',
-      receivedAt: new Date().toISOString(),
-      acknowledgementSent: false,
-    };
+    return buildResult();
   });
 
   const app = createApp({ contactService, enableRateLimit: false });
@@ -157,11 +152,7 @@ test('POST /api/v1/contact returns 422 with field errors for invalid input', asy
 });
 
 test('POST /api/v1/contact rejects whitespace-only required fields', async () => {
-  const contactService = buildService(async () => ({
-    id: 'unused',
-    receivedAt: new Date().toISOString(),
-    acknowledgementSent: false,
-  }));
+  const contactService = buildService(async () => buildResult());
 
   const app = createApp({ contactService, enableRateLimit: false });
 
@@ -179,15 +170,14 @@ test('POST /api/v1/contact rejects whitespace-only required fields', async () =>
   assert.equal(response.body.success, false);
 
   const fields = response.body.errors.map((error) => error.field);
-  assert.deepEqual(new Set(fields), new Set(['fullName', 'email', 'service', 'description']));
+  assert.deepEqual(
+    new Set(fields),
+    new Set(['fullName', 'email', 'service', 'description']),
+  );
 });
 
 test('POST /api/v1/contact rejects a filled honeypot field', async () => {
-  const contactService = buildService(async () => ({
-    id: 'unused',
-    receivedAt: new Date().toISOString(),
-    acknowledgementSent: false,
-  }));
+  const contactService = buildService(async () => buildResult());
 
   const app = createApp({ contactService, enableRateLimit: false });
 
@@ -222,11 +212,7 @@ test('POST /api/v1/contact does not leak internal errors', async () => {
 });
 
 test('POST /api/v1/contact returns 400 for malformed JSON', async () => {
-  const contactService = buildService(async () => ({
-    id: 'unused',
-    receivedAt: new Date().toISOString(),
-    acknowledgementSent: false,
-  }));
+  const contactService = buildService(async () => buildResult());
 
   const app = createApp({ contactService, enableRateLimit: false });
 
@@ -241,11 +227,7 @@ test('POST /api/v1/contact returns 400 for malformed JSON', async () => {
 });
 
 test('POST /api/v1/contact returns 422 when the body is missing', async () => {
-  const contactService = buildService(async () => ({
-    id: 'unused',
-    receivedAt: new Date().toISOString(),
-    acknowledgementSent: false,
-  }));
+  const contactService = buildService(async () => buildResult());
 
   const app = createApp({ contactService, enableRateLimit: false });
 
@@ -256,11 +238,7 @@ test('POST /api/v1/contact returns 422 when the body is missing', async () => {
 });
 
 test('contact submissions are rate limited', async () => {
-  const contactService = buildService(async () => ({
-    id: 'email_123',
-    receivedAt: '2026-01-01T00:00:00.000Z',
-    acknowledgementSent: true,
-  }));
+  const contactService = buildService(async () => buildResult());
 
   const app = createApp({ contactService, enableRateLimit: true });
   const limit = env.contactRateLimit.max;

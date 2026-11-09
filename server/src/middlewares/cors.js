@@ -17,7 +17,10 @@ export const corsMiddleware = cors({
       ),
     );
   },
+  // Admin sessions use an HTTP-only cookie, so credentialed requests must be
+  // explicitly allowed. Origins are still restricted to the allow-list above.
+  credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Accept', 'X-CSRF-Token'],
   maxAge: 86400,
 });
