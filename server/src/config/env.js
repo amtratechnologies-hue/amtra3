@@ -42,6 +42,8 @@ export const env = Object.freeze({
   trustProxy: process.env.TRUST_PROXY === 'true',
   // MongoDB connection string. Requests cannot be persisted without it.
   mongoUri: (process.env.MONGODB_URI || '').trim(),
+  // Optional database name when the connection string does not include one.
+  mongoDbName: (process.env.MONGODB_DB_NAME || '').trim(),
   rateLimit: {
     windowMs: toPositiveInt(process.env.RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
     max: toPositiveInt(process.env.RATE_LIMIT_MAX, 300),

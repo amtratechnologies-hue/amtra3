@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
+import mongoose from 'mongoose';
 import { env } from '../config/env.js';
 import logger from '../utils/logger.js';
 
@@ -13,8 +14,18 @@ function buildMongoStore(config) {
     return null;
   }
 
+  // Reuse the connection that the API already opened instead of creating a
+  // second MongoDB client (and a second SRV lookup) just for sessions.
+  if (mongoose.connection.readyState !== 1) {
+    return null;
+  }
+
+  const dbName =
+    mongoose.connection.db?.databaseName || mongoose.connection.name || '';
+
   return MongoStore.create({
-    mongoUrl: env.mongoUri,
+    client: mongoose.connection.getClient(),
+    ...(dbName ? { dbName } : {}),
     collectionName: 'adminSessions',
     ttl: Math.ceil(config.sessionTtlMs / 1000),
     autoRemove: 'native',
@@ -49,7 +60,7 @@ export function createAdminSessionMiddleware({
 
   if (!resolvedStore && env.isProduction) {
     log.warn(
-      'MONGODB_URI is not set. Admin sessions will use the in-memory store and will not be shared between instances.',
+      'MongoDB is not connected. Admin sessions will use the in-memory store and will not be shared between instances.',
     );
   }
 

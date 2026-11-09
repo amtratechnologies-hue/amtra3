@@ -4,7 +4,9 @@ import { env } from './config/env.js';
 import { seedAdminIfEnabled } from './services/adminSeed.service.js';
 import logger from './utils/logger.js';
 
-const connection = await connectToDatabase(env.mongoUri);
+const connection = await connectToDatabase(env.mongoUri, {
+  dbName: env.mongoDbName,
+});
 
 if (connection) {
   try {

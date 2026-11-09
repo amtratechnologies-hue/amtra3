@@ -10,7 +10,9 @@ async function main() {
     return;
   }
 
-  const connection = await connectToDatabase(env.mongoUri);
+  const connection = await connectToDatabase(env.mongoUri, {
+    dbName: env.mongoDbName,
+  });
 
   if (!connection) {
     process.exitCode = 1;
