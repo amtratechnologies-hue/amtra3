@@ -78,7 +78,7 @@ const sitemapPath = resolve(outputDir, 'sitemap.xml');
 mkdirSync(outputDir, { recursive: true });
 
 if (!/^https?:\/\/[^/\s]+/i.test(siteUrl)) {
-  writeFileSync(robotsPath, 'User-agent: *\nAllow: /\n', 'utf8');
+  writeFileSync(robotsPath, 'User-agent: *\nAllow: /\nDisallow: /admin\n', 'utf8');
   rmSync(sitemapPath, { force: true });
 
   console.warn(
@@ -110,7 +110,7 @@ ${urls}
 
   writeFileSync(
     robotsPath,
-    `User-agent: *\nAllow: /\n\nSitemap: ${siteUrl}/sitemap.xml\n`,
+    `User-agent: *\nAllow: /\nDisallow: /admin\n\nSitemap: ${siteUrl}/sitemap.xml\n`,
     'utf8',
   );
 

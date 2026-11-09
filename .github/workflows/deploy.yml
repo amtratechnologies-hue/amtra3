@@ -1,0 +1,72 @@
+name: Deploy
+
+# Deployment only runs after the CI workflow succeeds for a push to main.
+# Pull requests never deploy.
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: read
+
+# One production deployment at a time. A newer commit waits for the in-flight
+# deployment instead of racing it, so the same release is never deployed twice
+# in parallel.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  frontend:
+    name: Deploy frontend
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production-frontend
+
+    steps:
+      - name: Trigger frontend deploy hook
+        env:
+          DEPLOY_HOOK: ${{ secrets.FRONTEND_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::notice title=Frontend deployment not configured::FRONTEND_DEPLOY_HOOK is missing. No deployment was requested."
+            exit 0
+          fi
+
+          curl --fail --silent --show-error --max-time 60 \
+            --request POST "$DEPLOY_HOOK"
+
+          echo "::notice title=Frontend deployment triggered::The hosting provider accepted the deploy hook. Confirm the release in the provider dashboard."
+
+  backend:
+    name: Deploy backend
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production-backend
+
+    steps:
+      - name: Trigger backend deploy hook
+        env:
+          DEPLOY_HOOK: ${{ secrets.BACKEND_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::notice title=Backend deployment not configured::BACKEND_DEPLOY_HOOK is missing. No deployment was requested."
+            exit 0
+          fi
+
+          curl --fail --silent --show-error --max-time 60 \
+            --request POST "$DEPLOY_HOOK"
+
+          echo "::notice title=Backend deployment triggered::The hosting provider accepted the deploy hook. Confirm the release in the provider dashboard."

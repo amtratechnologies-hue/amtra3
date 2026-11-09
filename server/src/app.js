@@ -5,12 +5,18 @@ import { corsMiddleware } from './middlewares/cors.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { notFoundHandler } from './middlewares/notFoundHandler.js';
 import { apiLimiter } from './middlewares/rateLimiter.js';
-import { createApiRouter } from './routes/index.js';
+import { getAdminSessionMiddleware } from './middlewares/adminSession.js';
+import { adminAuthService as defaultAdminAuthService } from './services/adminAuth.service.js';
 import { contactService as defaultContactService } from './services/contact.service.js';
+import { serviceRequestRepository as defaultServiceRequestRepository } from './repositories/serviceRequest.repository.js';
+import { createApiRouter } from './routes/index.js';
 
 export function createApp({
   contactService = defaultContactService,
+  adminAuthService = defaultAdminAuthService,
+  serviceRequestRepository = defaultServiceRequestRepository,
   enableRateLimit = true,
+  sessionMiddleware = getAdminSessionMiddleware(),
 } = {}) {
   const app = express();
 
@@ -24,6 +30,7 @@ export function createApp({
   app.use(corsMiddleware);
   app.use(express.json({ limit: '32kb' }));
   app.use(express.urlencoded({ extended: false, limit: '32kb' }));
+  app.use(sessionMiddleware);
 
   if (enableRateLimit) {
     app.use('/api', apiLimiter);
@@ -31,7 +38,12 @@ export function createApp({
 
   app.use(
     '/api/v1',
-    createApiRouter({ contactService, enableRateLimit }),
+    createApiRouter({
+      contactService,
+      adminAuthService,
+      serviceRequestRepository,
+      enableRateLimit,
+    }),
   );
 
   app.use(notFoundHandler);

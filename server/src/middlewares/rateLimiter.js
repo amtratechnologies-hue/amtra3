@@ -35,15 +35,21 @@ function formatRetryHint(seconds) {
  * process, so restarting the API resets them. For a multi-instance deployment,
  * replace the store with a shared one (for example Redis).
  */
-function createLimiter({ windowMs, limit, message }) {
+function createLimiter({
+  windowMs,
+  limit,
+  message,
+  skipSuccessfulRequests = false,
+}) {
   return rateLimit({
     windowMs,
     limit,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
-    // Count every attempt, including failed validation and SMTP failures, so
-    // the endpoint cannot be used to hammer validation or the mail provider.
-    skipSuccessfulRequests: false,
+    // Contact submissions count every attempt, including failed validation and
+    // SMTP failures. Login attempts only count failures so a legitimate admin
+    // is not locked out after repeated successful sign-ins.
+    skipSuccessfulRequests,
     skipFailedRequests: false,
     handler: (_req, res) => {
       res
@@ -67,4 +73,11 @@ export const contactLimiter = createLimiter({
   windowMs: env.contactRateLimit.windowMs,
   limit: env.contactRateLimit.max,
   message: 'Too many project inquiry attempts from this connection.',
+});
+
+export const adminLoginLimiter = createLimiter({
+  windowMs: env.admin.loginRateLimit.windowMs,
+  limit: env.admin.loginRateLimit.max,
+  message: 'Too many admin sign-in attempts.',
+  skipSuccessfulRequests: true,
 });
